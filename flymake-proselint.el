@@ -35,7 +35,7 @@
 (flymake-quickdef-backend
   flymake-proselint-backend
   :pre-let ((proselint-exec (executable-find "proselint")))
-  :pre-check (unless proselint-exec (error "proselint not found on PATH"))
+  :pre-check (unless proselint-exec (error "Executable proselint not found on PATH"))
   :write-type 'pipe
   :proc-form (list proselint-exec "-")
   :search-regexp "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
