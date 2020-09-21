@@ -1,3 +1,5 @@
+![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
+
 # flymake-proselint
 
 This package makes it possible to use [proselint](http://proselint.com/) with Emacs built-in Flymake.
