@@ -1,6 +1,6 @@
 # flymake-proselint
 
-This package makes it possible to use [proselint](http://proselint.com/) with the Emacs built-in Flymake.
+This package makes it possible to use [proselint](http://proselint.com/) with Emacs built-in Flymake.
 
 ## Getting started
 
@@ -12,7 +12,8 @@ can use [`straight.el`](https://github.com/raxod502/straight.el) to install it:
   '(flymake-proselint :host github :repo "manuel-uberti/flymake-proselint"))
 ```
 
-Then you just need to activate in the modes you want your prose to be checked:
+Then you just need to activate it in the modes you want your prose to be
+checked:
 
 ``` emacs-lisp
 (add-hook 'markdown-mode-hook #'flymake-proselint-setup)
