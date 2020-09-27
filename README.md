@@ -6,8 +6,15 @@ This package makes it possible to use [proselint](http://proselint.com/) with Em
 
 ## Getting started
 
-`flymake-proselint` is not listed on ELPA nor MELPA. If you want to try it, you
-can use [`straight.el`](https://github.com/raxod502/straight.el) to install it:
+`flymake-proselint` is listed on MELPA. If you use `use-package` you could install
+it with something like:
+
+``` emacs-lisp
+(use-package flymake-proselint
+  :ensure flymake-quickdef)
+```
+
+You can use [`straight.el`](https://github.com/raxod502/straight.el) to install it from this repository instead:
 
 ``` emacs-lisp
 (straight-use-package
