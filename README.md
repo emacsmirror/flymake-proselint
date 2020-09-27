@@ -1,4 +1,5 @@
 ![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)
+![MELPA](https://melpa.org/packages/flymake-proselint-badge.svg)
 
 # flymake-proselint
 
