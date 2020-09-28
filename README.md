@@ -15,7 +15,7 @@ it with something like:
   :ensure flymake-quickdef)
 ```
 
-You can use [`straight.el`](https://github.com/raxod502/straight.el) to install it from this repository instead:
+Or you can use [`straight.el`](https://github.com/raxod502/straight.el) to install it from this repository instead:
 
 ``` emacs-lisp
 (straight-use-package
