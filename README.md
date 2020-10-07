@@ -26,8 +26,9 @@ Then you just need to activate it in the modes you want your prose to be
 checked:
 
 ``` emacs-lisp
-(flymake-mode +1)
-(add-hook 'markdown-mode-hook #'flymake-proselint-setup)
+(add-hook 'text-mode-hook (lambda ()
+                            (flymake-mode +1)
+                            (flymake-proselint-setup)))
 ```
 
 
