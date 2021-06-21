@@ -11,7 +11,8 @@ This package makes it possible to use [proselint](http://proselint.com/) with Em
 it with something like:
 
 ``` emacs-lisp
-(use-package flymake-proselint)
+(use-package flymake-proselint
+  :ensure t)
 ```
 
 Or you can use [`straight.el`](https://github.com/raxod502/straight.el) to install it from this repository instead:
