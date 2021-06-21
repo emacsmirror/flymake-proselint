@@ -5,7 +5,7 @@
 ;; Author: Manuel Uberti <manuel.uberti@inventati.org>
 ;; Version: 0.1.0
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "26.1") (flymake-quickdef "1.0.0"))
+;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/manuel-uberti/flymake-proselint
 
 ;; flymake-proselint is free software; you can redistribute it and/or modify it
@@ -30,22 +30,53 @@
 ;;; Code:
 
 (require 'flymake)
-(require 'flymake-quickdef)
 
-(flymake-quickdef-backend
-  flymake-proselint-backend
-  :pre-let ((proselint-exec (executable-find "proselint")))
-  :pre-check (unless proselint-exec (user-error "Executable proselint not found on PATH"))
-  :write-type 'pipe
-  :proc-form (list proselint-exec "-")
-  :search-regexp "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
-  :prep-diagnostic (let* ((lnum (string-to-number (match-string 1)))
-                          (lcol (string-to-number (match-string 2)))
-                          (msg (match-string 3))
-                          (pos (flymake-diag-region fmqd-source lnum lcol))
-                          (beg (car pos))
-                          (end (cdr pos)))
-                     (list fmqd-source beg end :warning msg)))
+(defvar-local flymake-proselint--flymake-proc nil)
+
+(defun flymake-proselint-backend (report-fn &rest _args)
+  (unless (executable-find "proselint")
+    (user-error "Executable proselint not found on PATH"))
+
+  (when (process-live-p flymake-proselint--flymake-proc)
+    (kill-process flymake-proselint--flymake-proc))
+
+  (let ((source (current-buffer)))
+    (save-restriction
+      (widen)
+      (setq
+       flymake-proselint--flymake-proc
+       (make-process
+        :name "proselint-flymake" :noquery t :connection-type 'pipe
+        :buffer (generate-new-buffer " *proselint-flymake*")
+        :command '("proselint" "-")
+        :sentinel
+        (lambda (proc _event)
+          (when (eq 'exit (process-status proc))
+            (unwind-protect
+                (if (with-current-buffer source (eq proc flymake-proselint--flymake-proc))
+                    (with-current-buffer (process-buffer proc)
+                      (goto-char (point-min))
+                      (cl-loop
+                       while (search-forward-regexp
+                              "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
+                              nil t)
+                       for msg = (match-string 3)
+                       for (beg . end) = (flymake-diag-region
+                                          source
+                                          (string-to-number (match-string 1))
+                                          (string-to-number (match-string 2)))
+                       collect (flymake-make-diagnostic source
+                                                        beg
+                                                        end
+                                                        :warning
+                                                        msg)
+                       into diags
+                       finally (funcall report-fn diags)))
+                  (flymake-log :warning "Canceling obsolete check %s"
+                               proc))
+              (kill-buffer (process-buffer proc)))))))
+      (process-send-region flymake-proselint--flymake-proc (point-min) (point-max))
+      (process-send-eof flymake-proselint--flymake-proc))))
 
 ;;;###autoload
 (defun flymake-proselint-setup ()
