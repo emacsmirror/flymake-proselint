@@ -3,7 +3,7 @@
 ;; Copyright (C) 2020  Manuel Uberti <manuel.uberti@inventati.org>
 ;;
 ;; Author: Manuel Uberti <manuel.uberti@inventati.org>
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Keywords: convenience
 ;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/manuel-uberti/flymake-proselint
