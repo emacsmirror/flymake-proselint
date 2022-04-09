@@ -4,7 +4,7 @@ This package makes it possible to use [proselint](http://proselint.com/) with Em
 
 ## Getting started
 
-`flymake-proselint` is listed on [GNU ELPA](http://elpa.gnu.org/packages/flymake-proselint.html), so you can use <kbd>M-x list-packages</kbd> to
+`flymake-proselint` is listed on [GNU ELPA](http://elpa.gnu.org/packages/flymake-proselint.html), so you can use `M-x list-packages` to
 install it.
 
 Then you just need to activate it in the modes you want your prose to be
