@@ -16,4 +16,3 @@ checked with something like:
                             (flymake-proselint-setup)))
 ```
 
-
