@@ -30,54 +30,102 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'subr-x)
+  (require 'pcase))
 (require 'flymake)
+
+(defun flymake-proselint-sentinel-1 (source data)
+  "Handle a successfully parsed DATA from SOURCE.
+DATA is a list of error diagnostics that are converted into
+Flymake diagnostic objects."
+  (let (diags)
+    (dolist (err (plist-get data :errors))
+      (push (flymake-make-diagnostic
+             source
+             (plist-get err :start)
+             (plist-get err :end)
+             (pcase (plist-get err :severity)
+               ("warning"	:warning)
+               ("suggestion"	:note)
+               (_		:error))
+             (with-temp-buffer		;create a message
+               (insert (plist-get err :message))
+               (let ((replacements (plist-get err :replacements)))
+                 (cond
+                  ((or (eq replacements :null) (null replacements))
+                   ;; There are no replacements.
+                   )
+                  ((stringp replacements)
+                   (insert " (Replacement: " replacements ")"))
+                  ((listp replacements)
+                   (insert " (Replacements: "
+                           (mapconcat
+                            (lambda (r)
+                              (plist-get r :unique))
+                            replacements ", ")
+                           ")"))))
+               (buffer-string)))
+            diags))
+    diags))
 
 (defvar-local flymake-proselint--flymake-proc nil)
 
+(defun flymake-proselint-sentinel (proc _event)
+  "Sentinel on PROC for handling Proselint response.
+A successfully parsed message is passed onto the function
+`flymake-proselint-sentinel-1' for further handling."
+  (pcase (process-status proc)
+    ('exit
+     (let ((report-fn (process-get proc 'report-fn))
+           (source (process-get proc 'source)))
+       (unwind-protect
+           (with-current-buffer (process-buffer proc)
+             (goto-char (point-min))
+             (cond
+              ((with-current-buffer source
+                 (not (eq proc flymake-proselint--flymake-proc)))
+               (flymake-log :warning "Canceling obsolete check %s" proc))
+              ((= (point-max) (point-min))
+               (flymake-log :debug "Empty response"))
+              ((condition-case err
+                   (let ((response (json-parse-buffer :object-type 'plist
+                                                      :array-type 'list)))
+                     (if (string= (plist-get response :status) "success")
+                         (thread-last
+                           (plist-get response :data)
+                           (flymake-proselint-sentinel-1 source)
+                           (funcall report-fn))
+                       (flymake-log :error "Check failed")))
+                 (json-parse-error
+                  (flymake-log :error "Invalid response: %S" err))))))
+         (with-current-buffer source
+           (setq flymake-proselint--flymake-proc nil))
+         (kill-buffer (process-buffer proc)))))
+    ('signal (kill-buffer (process-buffer proc)))))
+
 (defun flymake-proselint-backend (report-fn &rest _args)
+  "Flymake backend for Proselint.
+REPORT-FN is the flymake reporter function.  See the Info
+node (flymake) Backend functions for more details."
   (unless (executable-find "proselint")
     (user-error "Executable proselint not found on PATH"))
 
   (when (process-live-p flymake-proselint--flymake-proc)
     (kill-process flymake-proselint--flymake-proc))
 
-  (let ((source (current-buffer)))
+  (let ((proc (make-process
+               :name "proselint-flymake" :noquery t :connection-type 'pipe
+               :buffer (generate-new-buffer " *proselint-flymake*")
+               :command '("proselint" "--json" "-")
+               :sentinel #'flymake-proselint-sentinel)))
+    (process-put proc 'source (current-buffer))
+    (process-put proc 'report-fn report-fn)
+    (setq flymake-proselint--flymake-proc proc)
     (save-restriction
       (widen)
-      (setq
-       flymake-proselint--flymake-proc
-       (make-process
-        :name "proselint-flymake" :noquery t :connection-type 'pipe
-        :buffer (generate-new-buffer " *proselint-flymake*")
-        :command '("proselint" "-")
-        :sentinel
-        (lambda (proc _event)
-          (when (memq (process-status proc) '(exit signal))
-            (unwind-protect
-                (if (with-current-buffer source (eq proc flymake-proselint--flymake-proc))
-                    (with-current-buffer (process-buffer proc)
-                      (goto-char (point-min))
-                      (cl-loop
-                       while (search-forward-regexp
-                              "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
-                              nil t)
-                       for msg = (match-string 3)
-                       for (beg . end) = (flymake-diag-region
-                                          source
-                                          (string-to-number (match-string 1))
-                                          (string-to-number (match-string 2)))
-                       collect (flymake-make-diagnostic source
-                                                        beg
-                                                        end
-                                                        :warning
-                                                        msg)
-                       into diags
-                       finally (funcall report-fn diags)))
-                  (flymake-log :warning "Canceling obsolete check %s"
-                               proc))
-              (kill-buffer (process-buffer proc)))))))
-      (process-send-region flymake-proselint--flymake-proc (point-min) (point-max))
-      (process-send-eof flymake-proselint--flymake-proc))))
+      (process-send-region proc (point-min) (point-max))
+      (process-send-eof proc))))
 
 ;;;###autoload
 (defun flymake-proselint-setup ()
