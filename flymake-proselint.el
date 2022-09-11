@@ -4,7 +4,7 @@
 ;;
 ;; Author: Manuel Uberti <manuel.uberti@inventati.org>
 ;; Maintainer: Manuel Uberti <~manuel-uberti/flymake-proselint@lists.sr.ht>
-;; Version: 0.2.3
+;; Version: 0.3.0
 ;; Keywords: convenience
 ;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://git.sr.ht/~manuel-uberti/flycheck-proselint
