@@ -41,6 +41,10 @@
   :prefix "flymake-proselint-"
   :group 'flymake)
 
+(defcustom flymake-proselint-executable "proselint"
+  "Name of the Proselint executable."
+  :type 'string)
+
 (defcustom flymake-proselint-message-format
   "%m%r"
   "A format string to generate diagnostic messages.
@@ -55,7 +59,7 @@ The following %-sequences are replaced:
   ;; Regenerate using:
   ;;
   ;; (with-temp-buffer
-  ;;   (call-process "proselint" nil t nil "--dump-config")
+  ;;   (call-process flymake-proselint-executable nil t nil "--dump-config")
   ;;   (goto-char (point-min))
   ;;   (let ((config (json-parse-buffer :object-type 'alist)))
   ;;     (mapcar #'car (alist-get 'checks config))))
@@ -224,7 +228,7 @@ will be nil."
                    flymake-proselint-config-directory)))
       (unless (file-exists-p output)
         (let* ((config (with-temp-buffer
-                         (call-process "proselint" nil t nil "--dump-config")
+                         (call-process flymake-proselint-executable nil t nil "--dump-config")
                          (goto-char (point-min))
                          (json-parse-buffer :object-type 'alist)))
                (checks (alist-get 'checks config)))
@@ -316,7 +320,7 @@ A successfully parsed message is passed onto the function
   "Flymake backend for Proselint.
 REPORT-FN is the flymake reporter function.  See the Info
 node (flymake) Backend functions for more details."
-  (unless (executable-find "proselint")
+  (unless (executable-find flymake-proselint-executable)
     (user-error "Executable proselint not found on PATH"))
 
   (when (process-live-p flymake-proselint--flymake-proc)
@@ -327,8 +331,8 @@ node (flymake) Backend functions for more details."
                :buffer (generate-new-buffer " *proselint-flymake*")
                :command
                (if-let* ((conf (flymake-proselint-generate-configuration)))
-                   (list "proselint" "--config" conf "--json" "-")
-                 '("proselint" "--json" "-"))
+                   (list flymake-proselint-executable "--config" conf "--json" "-")
+                 (list flymake-proselint-executable "--json" "-"))
                :sentinel #'flymake-proselint-sentinel)))
     (process-put proc 'source (current-buffer))
     (process-put proc 'report-fn report-fn)
