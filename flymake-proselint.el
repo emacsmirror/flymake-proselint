@@ -35,6 +35,21 @@
   (require 'pcase))
 (require 'flymake)
 
+(defgroup flymake-proselint ()
+  "Flymake backend for proselint."
+  :prefix "flymake-proselint-"
+  :group 'flymake)
+
+(defcustom flymake-proselint-message-format
+  "%m%r"
+  "A format string to generate diagnostic messages.
+The following %-sequences are replaced:
+
+  %m - the message text
+  %r - replacement suggestions
+  %c - the error code"
+  :type 'string)
+
 (defun flymake-proselint-sentinel-1 (source data)
   "Handle a successfully parsed DATA from SOURCE.
 DATA is a list of error diagnostics that are converted into
@@ -49,23 +64,24 @@ Flymake diagnostic objects."
                ("warning"	:warning)
                ("suggestion"	:note)
                (_		:error))
-             (with-temp-buffer		;create a message
-               (insert (plist-get err :message))
-               (let ((replacements (plist-get err :replacements)))
-                 (cond
-                  ((or (eq replacements :null) (null replacements))
-                   ;; There are no replacements.
-                   )
-                  ((stringp replacements)
-                   (insert " (Replacement: " replacements ")"))
-                  ((listp replacements)
-                   (insert " (Replacements: "
-                           (mapconcat
-                            (lambda (r)
-                              (plist-get r :unique))
-                            replacements ", ")
-                           ")"))))
-               (buffer-string)))
+             (format-spec
+              flymake-proselint-message-format
+              `((?m . ,(plist-get err :message))
+                (?c . ,(plist-get err :check))
+                (?r . ,(let ((replacements (plist-get err :replacements)))
+                         (cond
+                          ((or (eq replacements :null) (null replacements))
+                           ;; There are no replacements.
+                           "")
+                          ((stringp replacements)
+                           (concat " (Replacement: " replacements ")"))
+                          ((listp replacements)
+                           (concat " (Replacements: "
+                                   (mapconcat
+                                    (lambda (r)
+                                      (plist-get r :unique))
+                                    replacements ", ")
+                                   ")"))))))))
             diags))
     diags))
 
