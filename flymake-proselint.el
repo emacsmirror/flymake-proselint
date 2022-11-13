@@ -287,7 +287,7 @@ Flymake diagnostic objects."
   "Sentinel on PROC for handling Proselint response.
 A successfully parsed message is passed onto the function
 `flymake-proselint-sentinel-1' for further handling."
-  (let ((buffer (process-buffer proc)))
+  (let ((buffer (process-get proc 'source)))
     (when (buffer-live-p buffer)
       (pcase (process-status proc)
         ('exit
