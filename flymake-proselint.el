@@ -287,14 +287,13 @@ Flymake diagnostic objects."
   "Sentinel on PROC for handling Proselint response.
 A successfully parsed message is passed onto the function
 `flymake-proselint-sentinel-1' for further handling."
-  (let ((buffer (process-get proc 'source)))
-    (when (buffer-live-p buffer)
+  (let ((source (process-get proc 'source)))
+    (when (buffer-live-p source)
       (pcase (process-status proc)
         ('exit
-         (let ((report-fn (process-get proc 'report-fn))
-               (source (process-get proc 'source)))
+         (let ((report-fn (process-get proc 'report-fn)))
            (unwind-protect
-               (with-current-buffer buffer
+               (with-current-buffer (process-buffer proc)
                  (goto-char (point-min))
                  (cond
                   ((with-current-buffer source
@@ -315,8 +314,8 @@ A successfully parsed message is passed onto the function
                       (flymake-log :error "Invalid response: %S" err))))))
              (with-current-buffer source
                (setq flymake-proselint--flymake-proc nil))
-             (kill-buffer buffer))))
-        ('signal (kill-buffer buffer))))))
+             (kill-buffer (process-buffer proc)))))
+        ('signal (kill-buffer (process-buffer proc)))))))
 
 (defun flymake-proselint-backend (report-fn &rest _args)
   "Flymake backend for Proselint.
